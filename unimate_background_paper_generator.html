@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unimate Deckground Paper Generator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            unimate: {
+              pink: '#E91E63',
+              deep: '#D81B60',
+              soft: '#FCE4EC',
+              light: '#FFF7FA',
+              dark: '#171923',
+              border: '#E9EAF0',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Space Grotesk"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F8F9FD;
+      color: #171923;
+    }
+    input[type=range] {
+      accent-color: #E91E63;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(233, 234, 240, 0.8);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #F1F3F9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #F48FB1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col font-sans selection:bg-pink-100 selection:text-pink-600">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-unimate-border px-6 py-3.5 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-unimate-pink to-unimate-deep text-white font-extrabold flex items-center justify-center text-lg shadow-md shadow-pink-500/20">
+        U
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-lg tracking-tight text-unimate-dark">Unimate</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-unimate-soft text-unimate-pink border border-pink-200">
+            Deckground Paper Engine
+          </span>
+        </div>
+        <p class="text-xs text-gray-500 -mt-0.5">Custom student canvas & platform backdrop designer</p>
+      </div>
+    </div>
+
+    <!-- Quick action preset selector & download -->
+    <div class="flex items-center gap-3">
+      <div class="hidden md:flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600">
+        <button onclick="applyPreset('minimalGraph')" class="preset-btn px-2.5 py-1 rounded-lg hover:bg-white transition-all text-gray-700">Minimal Graph</button>
+        <button onclick="applyPreset('softBloom')" class="preset-btn px-2.5 py-1 rounded-lg hover:bg-white transition-all text-gray-700">Soft Glow</button>
+        <button onclick="applyPreset('campusTech')" class="preset-btn px-2.5 py-1 rounded-lg bg-white shadow-xs text-unimate-pink">Student Tech</button>
+        <button onclick="applyPreset('subtleMesh')" class="preset-btn px-2.5 py-1 rounded-lg hover:bg-white transition-all text-gray-700">Pastel Mesh</button>
+      </div>
+
+      <button id="exportBtn" onclick="exportHighRes()" class="flex items-center gap-2 bg-unimate-pink hover:bg-unimate-deep text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-md shadow-pink-500/25 active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span>Download Wallpaper (.PNG)</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-[1720px] w-full mx-auto p-4 md:p-6 gap-6">
+
+    <!-- Interactive Canvas Display Area -->
+    <div class="flex-1 flex flex-col items-center justify-center bg-white rounded-3xl border border-unimate-border p-4 shadow-sm relative overflow-hidden group">
+      
+      <!-- Status Badge -->
+      <div class="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200 text-xs font-semibold text-gray-700 shadow-sm pointer-events-none">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="resolutionBadge">1920 × 1080 (FHD 16:9)</span>
+      </div>
+
+      <!-- Live Mockup Overlay Elements to show real context -->
+      <div id="mockupCard" class="absolute z-20 pointer-events-none transition-opacity duration-300 opacity-90 max-w-sm w-full mx-4 p-5 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/60 shadow-xl shadow-pink-950/5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center font-bold text-unimate-pink">
+            🌸
+          </div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-unimate-pink">Unimate Workspace</div>
+            <div class="text-sm font-extrabold text-gray-900">Discrete Mathematics & Algorithms</div>
+          </div>
+        </div>
+        <p class="text-xs text-gray-600 leading-relaxed mb-3">
+          "Connect. Chat. Grow." — Clean student wallpaper background paper designed for focus, aesthetic calm, and modern campus collaboration.
+        </p>
+        <div class="flex items-center justify-between text-[11px] font-semibold text-gray-500 border-t border-gray-100 pt-2.5">
+          <span>● 6 Friends Online</span>
+          <span class="text-unimate-pink font-bold">Unimate Campus Mesh</span>
+        </div>
+      </div>
+
+      <!-- Main Canvas Container -->
+      <div class="w-full h-full min-h-[440px] md:min-h-[580px] flex items-center justify-center relative rounded-2xl overflow-hidden bg-unimate-light">
+        <canvas id="deckgroundCanvas" class="max-w-full max-h-full object-contain rounded-xl shadow-inner transition-all"></canvas>
+      </div>
+
+      <!-- Canvas quick toggles bar -->
+      <div class="mt-3 w-full flex flex-wrap items-center justify-between text-xs text-gray-500 px-2">
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-1.5 cursor-pointer hover:text-gray-900">
+            <input type="checkbox" id="toggleMockupCard" checked onchange="toggleMockup(this.checked)" class="rounded text-unimate-pink focus:ring-0">
+            <span>Show Student Card Preview</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer hover:text-gray-900">
+            <input type="checkbox" id="toggleAutoRotate" onchange="toggleAnimation(this.checked)" class="rounded text-unimate-pink focus:ring-0">
+            <span>Gentle Float Animation</span>
+          </label>
+        </div>
+        <div class="flex items-center gap-2">
+          <span>Aspect:</span>
+          <select id="aspectRatioSelect" onchange="updateAspect(this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs font-medium text-gray-700 outline-none">
+            <option value="1920x1080">16:9 (Desktop Wallpaper 1920x1080)</option>
+            <option value="2560x1440">16:9 (QHD 2K 2560x1440)</option>
+            <option value="3840x2160">16:9 (4K Ultra 3840x2160)</option>
+            <option value="1080x1920">9:16 (Mobile Story 1080x1920)</option>
+            <option value="1200x630">1.91:1 (Social Deck Banner)</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <aside class="w-full lg:w-96 glass-panel rounded-3xl p-5 flex flex-col gap-5 shadow-sm max-h-[850px] overflow-y-auto custom-scrollbar">
+      
+      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div>
+          <h2 class="text-base font-extrabold text-unimate-dark">Paper Attributes</h2>
+          <p class="text-xs text-gray-500">Fine-tune textures, hues, and geometry</p>
+        </div>
+        <button onclick="randomizeSettings()" class="text-xs font-bold text-unimate-pink hover:text-unimate-deep flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Shuffle
+        </button>
+      </div>
+
+      <!-- Controls Group 1: Graph Paper & Isometric Grid -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between text-xs font-bold text-gray-700">
+          <span class="flex items-center gap-1.5">
+            <span class="text-unimate-pink">📐</span> Graph Paper Grid
+          </span>
+          <span id="gridOpacityVal" class="font-mono text-gray-500">30%</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="setGridType('isometric')" id="btnGridIso" class="grid-type-btn py-1.5 px-2 text-xs font-semibold rounded-xl border border-unimate-pink bg-pink-50 text-unimate-pink text-center">Isometric</button>
+          <button onclick="setGridType('dot')" id="btnGridDot" class="grid-type-btn py-1.5 px-2 text-xs font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-center">Dot Grid</button>
+          <button onclick="setGridType('graph')" id="btnGridGraph" class="grid-type-btn py-1.5 px-2 text-xs font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-center">Square Mesh</button>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Line Visibility</span>
+          </div>
+          <input type="range" id="gridOpacity" min="0" max="100" value="30" oninput="updateParam('gridOpacity', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Grid Cell Size</span>
+            <span id="gridSizeVal" class="font-mono text-gray-500">36px</span>
+          </div>
+          <input type="range" id="gridSize" min="16" max="72" value="36" oninput="updateParam('gridSize', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Controls Group 2: Ambient Pink Glow & Lighting -->
+      <div class="space-y-3 pt-3 border-t border-gray-100">
+        <div class="flex items-center justify-between text-xs font-bold text-gray-700">
+          <span class="flex items-center gap-1.5">
+            <span class="text-unimate-pink">✨</span> Pink Ambient Bloom
+          </span>
+          <span id="bloomVal" class="font-mono text-gray-500">55%</span>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Primary Bloom Intensity</span>
+          </div>
+          <input type="range" id="bloomIntensity" min="10" max="100" value="55" oninput="updateParam('bloomIntensity', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Secondary Aura Spread</span>
+            <span id="auraVal" class="font-mono text-gray-500">45%</span>
+          </div>
+          <input type="range" id="auraSpread" min="0" max="100" value="45" oninput="updateParam('auraSpread', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Controls Group 3: Geometric Glassmorphism Floating Cards -->
+      <div class="space-y-3 pt-3 border-t border-gray-100">
+        <div class="flex items-center justify-between text-xs font-bold text-gray-700">
+          <span class="flex items-center gap-1.5">
+            <span class="text-unimate-pink">🧊</span> Floating Geometric Cards
+          </span>
+          <span id="cardsCountVal" class="font-mono text-gray-500">6 Cards</span>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Number of Geometric Cards</span>
+          </div>
+          <input type="range" id="cardCount" min="0" max="12" value="6" oninput="updateParam('cardCount', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Frosted Glass Opacity</span>
+            <span id="glassOpacityVal" class="font-mono text-gray-500">45%</span>
+          </div>
+          <input type="range" id="glassOpacity" min="10" max="90" value="45" oninput="updateParam('glassOpacity', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Controls Group 4: Paper Texture & Film Grain -->
+      <div class="space-y-3 pt-3 border-t border-gray-100">
+        <div class="flex items-center justify-between text-xs font-bold text-gray-700">
+          <span class="flex items-center gap-1.5">
+            <span class="text-unimate-pink">📄</span> Paper Fiber & Grain
+          </span>
+          <span id="grainVal" class="font-mono text-gray-500">18%</span>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Natural Paper Grain Noise</span>
+          </div>
+          <input type="range" id="grainIntensity" min="0" max="60" value="18" oninput="updateParam('grainIntensity', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] text-gray-500">
+            <span>Vignette Soft Edge</span>
+            <span id="vignetteVal" class="font-mono text-gray-500">20%</span>
+          </div>
+          <input type="range" id="vignetteIntensity" min="0" max="60" value="20" oninput="updateParam('vignetteIntensity', this.value)" class="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Reset and Watermark info -->
+      <div class="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+        <span>Brand: Unimate Pink #E91E63</span>
+        <button onclick="resetDefaults()" class="hover:text-gray-700 underline">Reset all</button>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <script>
+    // State object holding all generation parameters
+    const state = {
+      width: 1920,
+      height: 1080,
+      gridType: 'isometric', // 'isometric', 'dot', 'graph'
+      gridOpacity: 0.30,
+      gridSize: 36,
+      bloomIntensity: 0.55,
+      auraSpread: 0.45,
+      cardCount: 6,
+      glassOpacity: 0.45,
+      grainIntensity: 0.18,
+      vignetteIntensity: 0.20,
+      animationActive: false,
+      animTime: 0,
+      // Cached floating elements for stable rendering
+      elements: []
+    };
+
+    const canvas = document.getElementById('deckgroundCanvas');
+    const ctx = canvas.getContext('2d');
+    let animationFrameId = null;
+
+    // Generate random stable elements for the floating glass deck cards
+    function generateElements() {
+      state.elements = [];
+      const count = 12;
+      for (let i = 0; i < count; i++) {
+        state.elements.push({
+          x: Math.random() * 0.9 + 0.05,
+          y: Math.random() * 0.9 + 0.05,
+          w: Math.random() * 180 + 100,
+          h: Math.random() * 140 + 80,
+          rot: (Math.random() - 0.5) * 0.6,
+          speed: Math.random() * 0.4 + 0.2,
+          radius: Math.random() * 16 + 12,
+          type: Math.random() > 0.4 ? 'card' : 'pill',
+          accent: Math.random() > 0.6
+        });
+      }
+    }
+
+    // Initialize resolution & generate
+    function setCanvasDimensions(w, h) {
+      state.width = w;
+      state.height = h;
+      canvas.width = w;
+      canvas.height = h;
+      document.getElementById('resolutionBadge').innerText = `${w} × ${h} (${getAspectLabel(w, h)})`;
+      render();
+    }
+
+    function getAspectLabel(w, h) {
+      if (w === 1920 && h === 1080) return "FHD 16:9";
+      if (w === 2560 && h === 1440) return "QHD 16:9";
+      if (w === 3840 && h === 2160) return "4K UHD";
+      if (w === 1080 && h === 1920) return "Mobile 9:16";
+      return "Deck Banner";
+    }
+
+    // MAIN RENDER LOOP: Procedurally draws the Unimate student deckground paper
+    function render() {
+      const w = state.width;
+      const h = state.height;
+      const t = state.animTime;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. BASE PAPER TONE: Crisp pristine student white with subtle pink warmth (#FFF7FA to #FFFFFF)
+      const baseGrad = ctx.createLinearGradient(0, 0, w, h);
+      baseGrad.addColorStop(0, '#FFFFFF');
+      baseGrad.addColorStop(0.5, '#FFF9FB');
+      baseGrad.addColorStop(1, '#FFF5F8');
+      ctx.fillStyle = baseGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // 2. AMBIENT BLOOM GRADIENTS (Unimate Primary Pink: #E91E63, Deep Pink: #D81B60, Soft Pink: #FCE4EC)
+      if (state.bloomIntensity > 0) {
+        // Top-Right ambient pink aura
+        const glow1 = ctx.createRadialGradient(
+          w * 0.82 + Math.sin(t * 0.5) * 40,
+          h * 0.18 + Math.cos(t * 0.4) * 30,
+          10,
+          w * 0.82,
+          h * 0.18,
+          w * 0.65 * (state.auraSpread + 0.4)
+        );
+        glow1.addColorStop(0, `rgba(233, 30, 99, ${0.28 * state.bloomIntensity})`);
+        glow1.addColorStop(0.4, `rgba(252, 228, 236, ${0.45 * state.bloomIntensity})`);
+        glow1.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glow1;
+        ctx.fillRect(0, 0, w, h);
+
+        // Bottom-Left soft deep pink bloom
+        const glow2 = ctx.createRadialGradient(
+          w * 0.15 + Math.cos(t * 0.3) * 35,
+          h * 0.85 + Math.sin(t * 0.3) * 35,
+          10,
+          w * 0.15,
+          h * 0.85,
+          w * 0.6 * (state.auraSpread + 0.35)
+        );
+        glow2.addColorStop(0, `rgba(216, 27, 96, ${0.22 * state.bloomIntensity})`);
+        glow2.addColorStop(0.45, `rgba(252, 228, 236, ${0.35 * state.bloomIntensity})`);
+        glow2.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, 0, w, h);
+
+        // Center-Right subtle cyan/violet student accent hint for depth
+        const glow3 = ctx.createRadialGradient(w * 0.45, h * 0.5, 0, w * 0.45, h * 0.5, w * 0.4);
+        glow3.addColorStop(0, `rgba(255, 240, 245, ${0.4 * state.bloomIntensity})`);
+        glow3.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glow3;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // 3. GRAPH PAPER / ISOMETRIC GRID MESH
+      if (state.gridOpacity > 0.01) {
+        drawGrid(w, h);
+      }
+
+      // 4. FLOATING FROSTED GLASS GEOMETRIC CARDS
+      if (state.cardCount > 0) {
+        drawFloatingCards(w, h, t);
+      }
+
+      // 5. NATURAL PAPER GRAIN NOISE & VIGNETTE
+      if (state.grainIntensity > 0) {
+        drawPaperGrain(w, h);
+      }
+
+      if (state.vignetteIntensity > 0) {
+        drawSoftVignette(w, h);
+      }
+    }
+
+    // Draw grid types: Isometric, Graph, or Dot
+    function drawGrid(w, h) {
+      ctx.save();
+      const step = state.gridSize;
+      const opacity = state.gridOpacity;
+
+      if (state.gridType === 'graph') {
+        ctx.strokeStyle = `rgba(233, 30, 99, ${0.14 * opacity})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += step) {
+          ctx.moveTo(x + 0.5, 0);
+          ctx.lineTo(x + 0.5, h);
+        }
+        for (let y = 0; y <= h; y += step) {
+          ctx.moveTo(0, y + 0.5);
+          ctx.lineTo(w, y + 0.5);
+        }
+        ctx.stroke();
+
+        // Major accents every 4 grid units
+        ctx.strokeStyle = `rgba(216, 27, 96, ${0.25 * opacity})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += step * 4) {
+          ctx.moveTo(x + 0.5, 0);
+          ctx.lineTo(x + 0.5, h);
+        }
+        for (let y = 0; y <= h; y += step * 4) {
+          ctx.moveTo(0, y + 0.5);
+          ctx.lineTo(w, y + 0.5);
+        }
+        ctx.stroke();
+
+      } else if (state.gridType === 'isometric') {
+        // Isometric 30-degree angled mesh
+        ctx.strokeStyle = `rgba(233, 30, 99, ${0.15 * opacity})`;
+        ctx.lineWidth = 0.9;
+        const angle = Math.PI / 6; // 30 degrees
+        const tanA = Math.tan(angle);
+        const isoStep = step * 1.5;
+
+        ctx.beginPath();
+        // Positive diagonal lines
+        for (let x = -h / tanA; x <= w + h / tanA; x += isoStep) {
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + h / tanA, h);
+        }
+        // Negative diagonal lines
+        for (let x = -h / tanA; x <= w + h / tanA; x += isoStep) {
+          ctx.moveTo(x, h);
+          ctx.lineTo(x + h / tanA, 0);
+        }
+        // Horizontal lines
+        for (let y = 0; y <= h; y += isoStep * Math.sin(angle)) {
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+        }
+        ctx.stroke();
+
+      } else if (state.gridType === 'dot') {
+        ctx.fillStyle = `rgba(233, 30, 99, ${0.28 * opacity})`;
+        for (let x = step / 2; x < w; x += step) {
+          for (let y = step / 2; y < h; y += step) {
+            ctx.beginPath();
+            ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    // Draw floating translucent glassmorphism cards and tokens
+    function drawFloatingCards(w, h, t) {
+      ctx.save();
+      const count = Math.min(state.cardCount, state.elements.length);
+
+      for (let i = 0; i < count; i++) {
+        const el = state.elements[i];
+        const floatOffset = Math.sin(t * el.speed + i) * 12;
+        const cx = el.x * w;
+        const cy = el.y * h + floatOffset;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(el.rot + Math.cos(t * 0.2 + i) * 0.04);
+
+        // Soft card drop shadow
+        ctx.shadowColor = 'rgba(233, 30, 99, 0.08)';
+        ctx.shadowBlur = 24;
+        ctx.shadowOffsetY = 10;
+
+        // Card frosted background
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * state.glassOpacity})`;
+        ctx.strokeStyle = el.accent 
+          ? `rgba(233, 30, 99, ${0.35 * state.glassOpacity})` 
+          : `rgba(255, 255, 255, ${0.85 * state.glassOpacity})`;
+        ctx.lineWidth = 1.5;
+
+        const rw = el.w;
+        const rh = el.h;
+        const r = el.radius;
+
+        // Rounded rect path
+        ctx.beginPath();
+        ctx.roundRect(-rw / 2, -rh / 2, rw, rh, r);
+        ctx.fill();
+        ctx.stroke();
+
+        // Internal subtle aesthetic lines / student diagram sketches inside the glass card
+        ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = `rgba(233, 30, 99, ${0.15 * state.glassOpacity})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-rw / 2 + 14, -rh / 2 + 20);
+        ctx.lineTo(-rw / 2 + 45, -rh / 2 + 20);
+        ctx.moveTo(-rw / 2 + 14, -rh / 2 + 32);
+        ctx.lineTo(rw / 2 - 20, -rh / 2 + 32);
+        ctx.moveTo(-rw / 2 + 14, -rh / 2 + 44);
+        ctx.lineTo(rw / 2 - 40, -rh / 2 + 44);
+        ctx.stroke();
+
+        // Small pink status dot indicator inside card
+        ctx.fillStyle = el.accent ? '#E91E63' : '#FCE4EC';
+        ctx.beginPath();
+        ctx.arc(rw / 2 - 18, -rh / 2 + 18, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // Natural tactile paper grain noise
+    function drawPaperGrain(w, h) {
+      ctx.save();
+      const intensity = state.grainIntensity * 255;
+      const grainCanvas = document.createElement('canvas');
+      const grainSize = 256;
+      grainCanvas.width = grainSize;
+      grainCanvas.height = grainSize;
+      const gCtx = grainCanvas.getContext('2d');
+      const imgData = gCtx.createImageData(grainSize, grainSize);
+      const data = imgData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const val = 255 - Math.random() * intensity;
+        data[i] = val;     // R
+        data[i + 1] = val; // G
+        data[i + 2] = val; // B
+        data[i + 3] = Math.random() * (intensity * 0.9); // alpha
+      }
+      gCtx.putImageData(imgData, 0, 0);
+
+      // Tile grain across main canvas with overlay blend
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 0.55;
+      const pattern = ctx.createPattern(grainCanvas, 'repeat');
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    // Soft border vignette for focus
+    function drawSoftVignette(w, h) {
+      ctx.save();
+      const radius = Math.max(w, h) * 0.75;
+      const vig = ctx.createRadialGradient(w / 2, h / 2, radius * 0.45, w / 2, h / 2, radius);
+      vig.addColorStop(0, 'rgba(255, 255, 255, 0)');
+      vig.addColorStop(1, `rgba(233, 30, 99, ${0.12 * state.vignetteIntensity})`);
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    // UI Updates and slider parameter bindings
+    function updateParam(param, val) {
+      if (param === 'gridOpacity') {
+        state.gridOpacity = val / 100;
+        document.getElementById('gridOpacityVal').innerText = `${val}%`;
+      } else if (param === 'gridSize') {
+        state.gridSize = parseInt(val);
+        document.getElementById('gridSizeVal').innerText = `${val}px`;
+      } else if (param === 'bloomIntensity') {
+        state.bloomIntensity = val / 100;
+        document.getElementById('bloomVal').innerText = `${val}%`;
+      } else if (param === 'auraSpread') {
+        state.auraSpread = val / 100;
+        document.getElementById('auraVal').innerText = `${val}%`;
+      } else if (param === 'cardCount') {
+        state.cardCount = parseInt(val);
+        document.getElementById('cardsCountVal').innerText = `${val} Cards`;
+      } else if (param === 'glassOpacity') {
+        state.glassOpacity = val / 100;
+        document.getElementById('glassOpacityVal').innerText = `${val}%`;
+      } else if (param === 'grainIntensity') {
+        state.grainIntensity = val / 100;
+        document.getElementById('grainVal').innerText = `${val}%`;
+      } else if (param === 'vignetteIntensity') {
+        state.vignetteIntensity = val / 100;
+        document.getElementById('vignetteVal').innerText = `${val}%`;
+      }
+      render();
+    }
+
+    function setGridType(type) {
+      state.gridType = type;
+      ['iso', 'dot', 'graph'].forEach(t => {
+        const btn = document.getElementById(`btnGrid${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (t === type.replace('ometric', '')) {
+          btn.className = "grid-type-btn py-1.5 px-2 text-xs font-semibold rounded-xl border border-unimate-pink bg-pink-50 text-unimate-pink text-center";
+        } else {
+          btn.className = "grid-type-btn py-1.5 px-2 text-xs font-semibold rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-center";
+        }
+      });
+      render();
+    }
+
+    // Curated Design Presets
+    function applyPreset(preset) {
+      document.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.remove('bg-white', 'shadow-xs', 'text-unimate-pink');
+        b.classList.add('text-gray-700');
+      });
+      event.target.classList.add('bg-white', 'shadow-xs', 'text-unimate-pink');
+      event.target.classList.remove('text-gray-700');
+
+      if (preset === 'minimalGraph') {
+        state.gridType = 'graph';
+        state.gridOpacity = 0.35;
+        state.gridSize = 32;
+        state.bloomIntensity = 0.30;
+        state.cardCount = 2;
+        state.grainIntensity = 0.12;
+      } else if (preset === 'softBloom') {
+        state.gridType = 'dot';
+        state.gridOpacity = 0.20;
+        state.bloomIntensity = 0.75;
+        state.auraSpread = 0.65;
+        state.cardCount = 4;
+        state.grainIntensity = 0.16;
+      } else if (preset === 'campusTech') {
+        state.gridType = 'isometric';
+        state.gridOpacity = 0.38;
+        state.gridSize = 36;
+        state.bloomIntensity = 0.55;
+        state.cardCount = 7;
+        state.grainIntensity = 0.18;
+      } else if (preset === 'subtleMesh') {
+        state.gridType = 'isometric';
+        state.gridOpacity = 0.15;
+        state.gridSize = 48;
+        state.bloomIntensity = 0.45;
+        state.cardCount = 0;
+        state.grainIntensity = 0.24;
+      }
+
+      // Sync form sliders
+      syncInputsFromState();
+      render();
+    }
+
+    function syncInputsFromState() {
+      document.getElementById('gridOpacity').value = state.gridOpacity * 100;
+      document.getElementById('gridOpacityVal').innerText = `${Math.round(state.gridOpacity * 100)}%`;
+      document.getElementById('gridSize').value = state.gridSize;
+      document.getElementById('gridSizeVal').innerText = `${state.gridSize}px`;
+      document.getElementById('bloomIntensity').value = state.bloomIntensity * 100;
+      document.getElementById('bloomVal').innerText = `${Math.round(state.bloomIntensity * 100)}%`;
+      document.getElementById('cardCount').value = state.cardCount;
+      document.getElementById('cardsCountVal').innerText = `${state.cardCount} Cards`;
+      document.getElementById('grainIntensity').value = state.grainIntensity * 100;
+      document.getElementById('grainVal').innerText = `${Math.round(state.grainIntensity * 100)}%`;
+      setGridType(state.gridType);
+    }
+
+    function resetDefaults() {
+      applyPreset('campusTech');
+    }
+
+    function randomizeSettings() {
+      state.gridOpacity = (Math.random() * 0.4 + 0.1);
+      state.gridSize = Math.floor(Math.random() * 40 + 20);
+      state.bloomIntensity = (Math.random() * 0.5 + 0.3);
+      state.cardCount = Math.floor(Math.random() * 8 + 2);
+      state.grainIntensity = (Math.random() * 0.25 + 0.08);
+      generateElements();
+      syncInputsFromState();
+      render();
+    }
+
+    function updateAspect(val) {
+      const [w, h] = val.split('x').map(Number);
+      setCanvasDimensions(w, h);
+    }
+
+    function toggleMockup(show) {
+      const card = document.getElementById('mockupCard');
+      card.style.opacity = show ? '0.9' : '0';
+    }
+
+    function toggleAnimation(active) {
+      state.animationActive = active;
+      if (active) {
+        let lastTime = performance.now();
+        function loop(now) {
+          if (!state.animationActive) return;
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+          state.animTime += dt;
+          render();
+          animationFrameId = requestAnimationFrame(loop);
+        }
+        animationFrameId = requestAnimationFrame(loop);
+      } else {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      }
+    }
+
+    // High resolution PNG download/export
+    function exportHighRes() {
+      // Temporarily ensure high resolution render is fresh
+      render();
+
+      const link = document.createElement('a');
+      link.download = `Unimate-Deckground-Paper-${state.width}x${state.height}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      generateElements();
+      setCanvasDimensions(1920, 1080);
+    });
+  </script>
+</body>
+</html>
